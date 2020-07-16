@@ -142,3 +142,6 @@ cython_debug/
 
 #mac os x desktop service file
 .DS_Store
+
+#folder for saving images of ads
+.media/

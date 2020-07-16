@@ -1,11 +1,12 @@
 from rest_framework import generics
-from goods.serializers import AdDetailSerializer, AdListSerializerCut
-from goods.models import Ad
+from goods.serializers import *
+from goods.models import Ad, Tags
 from django.db.models import F
 from rest_framework.views import APIView
 from django.http import Http404
 from rest_framework.response import Response
-
+import django_filters
+from django_filters import rest_framework as filters
 
 # creating a new ad (POST)
 class AdCreateView(generics.CreateAPIView):
@@ -19,7 +20,7 @@ class AdListView(generics.ListAPIView):
 
 
 # update an ad or delete (PUT, DELETE)
-class AdUpdateView(generics.RetrieveUpdateDestroyAPIView):
+class AdDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = AdDetailSerializer
     queryset = Ad.objects.all()
 
@@ -47,3 +48,24 @@ class AdEntireLook(APIView):
         return Response(serializer.data)
 
 
+# get an entire list of tags
+class TagAllLook(generics.ListAPIView):
+    serializer_class = TagDetailSerializer
+    queryset = Tags.objects.all()
+
+
+class AdFilter(django_filters.FilterSet):
+    min_price = django_filters.NumberFilter(field_name="price", lookup_expr='gte')
+    max_price = django_filters.NumberFilter(field_name="price", lookup_expr='lte')
+
+    class Meta:
+        model = Ad
+        fields = ['min_price', 'max_price']
+
+
+# filter ads by price
+class FindByTag(generics.ListAPIView):
+    queryset = Ad.objects.all()
+    serializer_class = AdDetailSerializer
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_class = AdFilter

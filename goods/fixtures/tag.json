@@ -1,0 +1,72 @@
+[
+  {
+    "model": "goods.tags",
+    "pk": 1,
+    "fields": {
+      "name": "Транспорт"
+    }
+  },
+  {
+    "model": "goods.tags",
+    "pk": 2,
+    "fields": {
+      "name": "Личные вещи"
+    }
+  },
+  {
+    "model": "goods.tags",
+    "pk": 3,
+    "fields": {
+      "name": "Для дома и дачи"
+    }
+  },
+  {
+    "model": "goods.tags",
+    "pk": 4,
+    "fields": {
+      "name": "Бытовая электроника"
+    }
+  },
+  {
+    "model": "goods.tags",
+    "pk": 5,
+    "fields": {
+      "name": "Хобби и отдых"
+    }
+  },
+  {
+    "model": "goods.tags",
+    "pk": 6,
+    "fields": {
+      "name": "Недвижимость"
+    }
+  },
+  {
+    "model": "goods.tags",
+    "pk": 7,
+    "fields": {
+      "name": "Работа"
+    }
+  },
+  {
+    "model": "goods.tags",
+    "pk": 8,
+    "fields": {
+      "name": "Услуги"
+    }
+  },
+  {
+    "model": "goods.tags",
+    "pk": 9,
+    "fields": {
+      "name": "Для бизнеса"
+    }
+  },
+  {
+    "model": "goods.tags",
+    "pk": 10,
+    "fields": {
+      "name": "Животные"
+    }
+  }
+]

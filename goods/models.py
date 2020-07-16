@@ -20,6 +20,6 @@ class Ad(models.Model):
         (10, 'Животные'),
     )
     tag = models.IntegerField('Тип объявления', choices=TAGS)
-    views = models.PositiveIntegerField(default=0, editable=False)
+    views = models.PositiveIntegerField(default=0, auto_created=True, editable=False)
     img_src = models.FileField(upload_to='items')
 

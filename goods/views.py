@@ -54,7 +54,7 @@ class TagAllLook(generics.ListAPIView):
     queryset = Tags.objects.all()
 
 
-class AdFilter(django_filters.FilterSet):
+class AdFilterByPrice(django_filters.FilterSet):
     min_price = django_filters.NumberFilter(field_name="price", lookup_expr='gte')
     max_price = django_filters.NumberFilter(field_name="price", lookup_expr='lte')
 
@@ -64,8 +64,25 @@ class AdFilter(django_filters.FilterSet):
 
 
 # filter ads by price
+class FindByPrice(generics.ListAPIView):
+    queryset = Ad.objects.all()
+    serializer_class = AdDetailSerializer
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_class = AdFilterByPrice
+
+
+# django filter cls for filtering with multiple params FOR TAGS
+class AdFilterByTags(django_filters.FilterSet):
+    tag_id = filters.ModelMultipleChoiceFilter(queryset=Ad.objects.all(), to_field_name='tag_id')
+
+    class Meta:
+        model = Ad
+        fields = ['tag_id']
+
+
+# filter ads by tags
 class FindByTag(generics.ListAPIView):
     queryset = Ad.objects.all()
     serializer_class = AdDetailSerializer
     filter_backends = (filters.DjangoFilterBackend,)
-    filter_class = AdFilter
+    filter_class = AdFilterByTags

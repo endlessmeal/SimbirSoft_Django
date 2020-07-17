@@ -144,4 +144,4 @@ cython_debug/
 .DS_Store
 
 #folder for saving images of ads
-media/
+media/items

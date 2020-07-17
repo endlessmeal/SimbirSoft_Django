@@ -1,4 +1,4 @@
-from rest_framework import generics
+from rest_framework import generics, viewsets
 from goods.serializers import *
 from goods.models import Ad, Tags
 from django.db.models import F
@@ -7,6 +7,7 @@ from django.http import Http404
 from rest_framework.response import Response
 import django_filters
 from django_filters import rest_framework as filters
+
 
 # creating a new ad (POST)
 class AdCreateView(generics.CreateAPIView):
@@ -86,3 +87,19 @@ class FindByTag(generics.ListAPIView):
     serializer_class = AdDetailSerializer
     filter_backends = (filters.DjangoFilterBackend,)
     filter_class = AdFilterByTags
+
+
+class AdFilterByTime(django_filters.FilterSet):
+    created_min = filters.DateFilter(field_name='date', lookup_expr='gte')
+    created_max = filters.DateFilter(field_name='date', lookup_expr='lte')
+
+    class Meta:
+        model = Ad
+        fields = ['created_min', 'created_max']
+
+
+class FindByTime(generics.ListAPIView):
+    queryset = Ad.objects.all()
+    serializer_class = AdDetailSerializer
+    filter_backends = (filters.DjangoFilterBackend,)
+    filter_class = AdFilterByTime

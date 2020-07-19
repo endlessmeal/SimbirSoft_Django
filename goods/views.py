@@ -1,12 +1,14 @@
-from rest_framework import generics, viewsets
-from goods.serializers import *
-from goods.models import Ad, Tags
-from django.db.models import F
-from rest_framework.views import APIView
-from django.http import Http404
-from rest_framework.response import Response
 import django_filters
+from django.db.models import F
+from django.http import Http404
 from django_filters import rest_framework as filters
+from rest_framework import generics
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from goods.models import Ad, Tags
+from goods.serializers import (AdDetailSerializer, AdListSerializerCut,
+                               TagDetailSerializer)
 
 
 # creating a new ad (POST)
@@ -37,7 +39,7 @@ class AdEntireLook(APIView):
     def get_object(self, pk):
         try:
             ad_current = Ad.objects.get(pk=pk)
-            ad_current.views = F('views') + 1
+            ad_current.views = F("views") + 1
             ad_current.save()
             return Ad.objects.get(pk=pk)
         except Ad.DoesNotExist:
@@ -55,51 +57,23 @@ class TagAllLook(generics.ListAPIView):
     queryset = Tags.objects.all()
 
 
-class AdFilterByPrice(django_filters.FilterSet):
-    min_price = django_filters.NumberFilter(field_name="price", lookup_expr='gte')
-    max_price = django_filters.NumberFilter(field_name="price", lookup_expr='lte')
+class AdFilter(django_filters.FilterSet):
+    min_price = django_filters.NumberFilter(field_name="price", lookup_expr="gte")
+    max_price = django_filters.NumberFilter(field_name="price", lookup_expr="lte")
+    tag_id = filters.ModelMultipleChoiceFilter(
+        queryset=Ad.objects.all(), to_field_name="tag_id"
+    )
+    created_min = filters.DateFilter(field_name="date", lookup_expr="gte")
+    created_max = filters.DateFilter(field_name="date", lookup_expr="lte")
 
     class Meta:
         model = Ad
-        fields = ['min_price', 'max_price']
+        fields = ["min_price", "max_price", "tag_id", "created_min", "created_max"]
 
 
-# filter ads by price
-class FindByPrice(generics.ListAPIView):
+# filter ads by parameters
+class FindByFilter(generics.ListAPIView):
     queryset = Ad.objects.all()
     serializer_class = AdDetailSerializer
     filter_backends = (filters.DjangoFilterBackend,)
-    filter_class = AdFilterByPrice
-
-
-# django filter cls for filtering with multiple params FOR TAGS
-class AdFilterByTags(django_filters.FilterSet):
-    tag_id = filters.ModelMultipleChoiceFilter(queryset=Ad.objects.all(), to_field_name='tag_id')
-
-    class Meta:
-        model = Ad
-        fields = ['tag_id']
-
-
-# filter ads by tags
-class FindByTag(generics.ListAPIView):
-    queryset = Ad.objects.all()
-    serializer_class = AdDetailSerializer
-    filter_backends = (filters.DjangoFilterBackend,)
-    filter_class = AdFilterByTags
-
-
-class AdFilterByTime(django_filters.FilterSet):
-    created_min = filters.DateFilter(field_name='date', lookup_expr='gte')
-    created_max = filters.DateFilter(field_name='date', lookup_expr='lte')
-
-    class Meta:
-        model = Ad
-        fields = ['created_min', 'created_max']
-
-
-class FindByTime(generics.ListAPIView):
-    queryset = Ad.objects.all()
-    serializer_class = AdDetailSerializer
-    filter_backends = (filters.DjangoFilterBackend,)
-    filter_class = AdFilterByTime
+    filter_class = AdFilter

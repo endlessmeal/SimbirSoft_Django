@@ -6,9 +6,9 @@ from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from goods.models import Ad, Tags
-from goods.serializers import (AdDetailSerializer, AdListSerializerCut,
-                               TagDetailSerializer)
+from goods.goods.models import Ad, Tags
+from goods.goods.serializers import (AdDetailSerializer, AdListSerializerCut,
+                                     TagDetailSerializer)
 
 
 # creating a new ad (POST)

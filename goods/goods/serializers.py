@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from goods.goods.models import Ad, Tags
+from goods.models import Ad, Tags
 
 
 class AdListSerializerCut(serializers.ModelSerializer):

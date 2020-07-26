@@ -5,7 +5,7 @@ from rest_framework import permissions
 from django.conf.urls.static import static
 from django.conf import settings
 
-from goods.goods.views import (AdCreateView, AdDetailView, AdEntireLook, AdFastLook,
+from goods.views import (AdCreateView, AdDetailView, AdEntireLook, AdFastLook,
                          AdListView, FindByFilter, TagAllLook)
 
 schema_view = get_schema_view(

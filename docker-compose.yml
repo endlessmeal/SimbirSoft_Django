@@ -1,5 +1,10 @@
 version: '3'
-    
+
+networks:
+  app-tier:
+    driver: bridge
+
+
 services:
   db:
     image: postgres
@@ -10,8 +15,20 @@ services:
       - POSTGRES_PASSWORD=postgres
     ports:
       - "5432:5432"
+    networks:
+      - app-tier
+
+  redis:
+    image: 'bitnami/redis:latest'
+    ports:
+    - "6379:6379"
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    networks:
+      - app-tier
+
   goods:
-    build: ./goods
+    build: goods/
     command: bash -c "python goods/manage.py makemigrations && python goods/manage.py migrate && python goods/manage.py loaddata tag.json && python goods/manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/code
@@ -19,3 +36,18 @@ services:
       - "8000:8000"
     depends_on:
       - db
+    networks:
+      - app-tier
+
+  user_service:
+    build: ./user_service
+    command: bash -c "python3 user_service/app/server.py"
+    volumes:
+      - .:/code
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+      - redis
+    networks:
+      - app-tier

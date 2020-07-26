@@ -6,8 +6,8 @@ from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from goods.goods.models import Ad, Tags
-from goods.goods.serializers import (AdDetailSerializer, AdListSerializerCut,
+from goods.models import Ad, Tags
+from goods.serializers import (AdDetailSerializer, AdListSerializerCut,
                                      TagDetailSerializer)
 
 

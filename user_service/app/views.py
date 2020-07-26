@@ -15,6 +15,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 30
 
 
+# registration of new user with 4 params(username, password, name, age)
 async def signin(request):
     """
     ---
@@ -48,17 +49,26 @@ async def signin(request):
           type: string
           paramType: form
     """
-    data = [request.rel_url.query['username'],
-            request.rel_url.query['password'],
-            request.rel_url.query['name'],
-            request.rel_url.query['age']]
+    data = [
+        request.rel_url.query["username"],
+        request.rel_url.query["password"],
+        request.rel_url.query["name"],
+        request.rel_url.query["age"],
+    ]
 
-    user = User(request.app['db'], data)
+    user = User(request.app["db"], data)
+    # creating a new user
     result = await user.create_user()
     if result:
-        return web.Response(content_type='application/json', text=tokens.convert_json_status('Success'))
+        return web.Response(
+            content_type="application/json",
+            text=tokens.convert_json_status("Success")
+        )
     else:
-        return web.Response(content_type='application/json', text=tokens.convert_json_status('User exists'))
+        return web.Response(
+            content_type="application/json",
+            text=tokens.convert_json_status("User exists"),
+        )
 
 
 async def login(request):
@@ -84,31 +94,45 @@ async def login(request):
           type: string
           paramType: form
     """
-    data = [request.rel_url.query['username'],
-            request.rel_url.query['password']]
+    data = [request.rel_url.query["username"],
+            request.rel_url.query["password"]]
 
-    user = User(request.app['db'], data)
+    user = User(request.app["db"], data)
     result = await user.login_user()
     if not result:
-        raise web.HTTPUnauthorized(
-            text='Incorrect username or password'
-        )
+        raise web.HTTPUnauthorized(text="Incorrect username or password")
 
+    # add an expire time to access token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     session = await new_session(request)
     user_info = await user.user_info()
-    access_token = await tokens.create_access_token(data={'uuid': user_info[0], 'name': user_info[2]},
-                                                    expires_delta=access_token_expires)
+    # creating a new access token for user with his uuid and name
+    access_token = await tokens.create_access_token(
+        data={"uuid": user_info[0], "name": user_info[2]},
+        expires_delta=access_token_expires,
+    )
 
-    session['access_token'] = access_token.decode('utf-8')
-    session['refresh_token'] = secrets.token_hex(32)
-    session['refresh_token_exp'] = math.ceil((datetime.utcnow() + timedelta(days=30)).timestamp())
+    # add an access token to session and decode from bytes
+    session["access_token"] = access_token.decode("utf-8")
+    # generate a refresh token
+    session["refresh_token"] = secrets.token_hex(32)
+    # add an expire time for refresh token start from current time and end in one month
+    session["refresh_token_exp"] = math.ceil(
+        (datetime.utcnow() + timedelta(days=30)).timestamp()
+    )
+    # convert timestamp to float
     num_ac_tok_exp = tokens.time_to_float(access_token_expires)
 
-    return web.Response(content_type='application/json',
-                        text=tokens.convert_json_tokens(session['access_token'], num_ac_tok_exp,
-                                                        session['refresh_token'], session['refresh_token_exp']),
-                        status=200)
+    return web.Response(
+        content_type="application/json",
+        text=tokens.convert_json_tokens(
+            session["access_token"],
+            num_ac_tok_exp,
+            session["refresh_token"],
+            session["refresh_token_exp"],
+        ),
+        status=200,
+    )
 
 
 async def logout(request):
@@ -128,12 +152,15 @@ async def logout(request):
         schema:
           type: "string"
     """
-    access_token = request.headers['Authorization']
+    access_token = request.headers["Authorization"]
     if access_token is None:
-        raise web.HTTPForbidden(reason='Access key is empty')
+        raise web.HTTPForbidden(reason="Access key is empty")
 
     await tokens.del_session(request)
-    return web.Response(content_type='application/json', text=tokens.convert_json_status('You are logged out'))
+    return web.Response(
+        content_type="application/json",
+        text=tokens.convert_json_status("You are logged out"),
+    )
 
 
 async def get_user_info(request):
@@ -153,11 +180,12 @@ async def get_user_info(request):
         schema:
           type: "string"
     """
-    access_token = request.headers['Authorization']
+    access_token = request.headers["Authorization"]
     decoded_jwt = tokens.decode_jwt(access_token)
 
-    uuid = decoded_jwt['uuid']
-    async with request.app['db'].acquire() as conn:
+    uuid = decoded_jwt["uuid"]
+    # get a row with uuid which encoded in jwt and returns info about user
+    async with request.app["db"].acquire() as conn:
         s = sa.select([users]).where(users.c.UUID == uuid)
         execute_query = await conn.execute(s)
         fetch_res = await execute_query.fetchone()
@@ -165,8 +193,10 @@ async def get_user_info(request):
     name = fetch_res[3]
     age = fetch_res[4]
 
-    return web.Response(content_type='application/json',
-                        text=tokens.convert_json_info(username, name, age))
+    return web.Response(
+        content_type="application/json",
+        text=tokens.convert_json_info(username, name, age),
+    )
 
 
 async def get_new_tokens(request):
@@ -186,34 +216,47 @@ async def get_new_tokens(request):
         schema:
           type: "string"
     """
-    refresh_token = request.headers['Authorization']
+    refresh_token = request.headers["Authorization"]
     session = await get_session(request)
-    rfr = session['refresh_token']
-    access_token = session['access_token']
-    rfr_exp = session['refresh_token_exp']
+    rfr = session["refresh_token"]
+    access_token = session["access_token"]
+    rfr_exp = session["refresh_token_exp"]
     if refresh_token != rfr:
-        return web.Response(content_type='application/json',
-                            text=tokens.convert_json_status('Incorrect refresh token'))
+        return web.Response(
+            content_type="application/json",
+            text=tokens.convert_json_status("Incorrect refresh token"),
+        )
 
+    # check if refresh token expires
     if rfr_exp - math.ceil(datetime.utcnow().timestamp()) > 0:
-        decoded_access = jwt.decode(access_token, SECRET_KEY, verify=False, algorithms=ALGORITHM)
+        decoded_access = jwt.decode(
+            access_token, SECRET_KEY, verify=False, algorithms=ALGORITHM
+        )
 
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-        ac_tok = await tokens.create_access_token(data={'uuid': decoded_access['uuid'], 'name': decoded_access['name']},
-                                                  expires_delta=access_token_expires)
+        ac_tok = await tokens.create_access_token(
+            data={"uuid": decoded_access["uuid"], "name": decoded_access["name"]},
+            expires_delta=access_token_expires,
+        )
 
-        session['access_token'] = ac_tok.decode('utf-8')
-        session['refresh_token'] = secrets.token_hex(32)
+        session["access_token"] = ac_tok.decode("utf-8")
+        session["refresh_token"] = secrets.token_hex(32)
         num_ac_tok_exp = tokens.time_to_float(access_token_expires)
 
-        return web.Response(content_type='application/json',
-                            text=tokens.convert_json_tokens(session['access_token'], num_ac_tok_exp,
-                                                            session['refresh_token'], session['refresh_token_exp']),
-                            status=200)
+        return web.Response(
+            content_type="application/json",
+            text=tokens.convert_json_tokens(
+                session["access_token"],
+                num_ac_tok_exp,
+                session["refresh_token"],
+                session["refresh_token_exp"],
+            ),
+            status=200,
+        )
 
     session.clear()
     await logout(request)
-    return web.Response(content_type='application/json',
-                        text=tokens.convert_json_status('Refresh token has expired'))
-
-
+    return web.Response(
+        content_type="application/json",
+        text=tokens.convert_json_status("Refresh token has expired"),
+    )

@@ -12,20 +12,20 @@ ALGORITHM = JWT["ALGORITHM"]
 
 
 def convert_json_status(message):
-    return json.dumps({'status': message})
+    return json.dumps({"status": message})
 
 
 def convert_json_info(username, name, age):
-    return json.dumps({'username': username,
-                       'name': name,
-                       'age': age})
+    return json.dumps({"username": username, "name": name, "age": age})
 
 
 def convert_json_tokens(ac_tok, ac_exp, rf_tok, rf_exp):
-    return json.dumps({'access token': {'token': ac_tok,
-                                        'expires': ac_exp},
-                       'refresh token': {'token': rf_tok,
-                                         'expires': rf_exp}})
+    return json.dumps(
+        {
+            "access token": {"token": ac_tok, "expires": ac_exp},
+            "refresh token": {"token": rf_tok, "expires": rf_exp},
+        }
+    )
 
 
 async def del_session(request):
@@ -34,7 +34,8 @@ async def del_session(request):
     del session
 
 
-async def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+async def create_access_token(data: dict,
+                              expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -53,7 +54,9 @@ async def decode_jwt(access_token):
     try:
         decoded_jwt = jwt.decode(access_token, SECRET_KEY, algorithms=ALGORITHM)
     except jwt.ExpiredSignatureError as j:
-        return web.Response(content_type='application/json',
-                            text=convert_json_status(f'Time of access token has expired: {j}'))
+        return web.Response(
+            content_type="application/json",
+            text=convert_json_status(f"Time of access token has expired: {j}"),
+        )
 
     return decoded_jwt

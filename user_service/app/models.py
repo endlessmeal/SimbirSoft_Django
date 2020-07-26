@@ -5,14 +5,22 @@ from passlib.hash import argon2
 
 
 users = sa.Table(
-    'users',
+    "users",
     sa.MetaData(),
-    sa.Column(str(UUID(as_uuid=True)), sa.String, primary_key=True, default=uuid.uuid4, unique=True, nullable=False),
-    sa.Column('username', sa.String(50), unique=True, nullable=False),
-    sa.Column('password', sa.String, nullable=False),
-    sa.Column('name', sa.String, nullable=False),
-    sa.Column('age', sa.Integer, nullable=False),
-    sa.Column('created_at', sa.DateTime, nullable=False, server_default=sa.func.now()),
+    sa.Column(
+        str(UUID(as_uuid=True)),
+        sa.String,
+        primary_key=True,
+        default=uuid.uuid4,
+        unique=True,
+        nullable=False,
+    ),
+    sa.Column("username", sa.String(50), unique=True, nullable=False),
+    sa.Column("password", sa.String, nullable=False),
+    sa.Column("name", sa.String, nullable=False),
+    sa.Column("age", sa.Integer, nullable=False),
+    sa.Column("created_at", sa.DateTime, nullable=False,
+              server_default=sa.func.now()),
     sa.Column(
         "updated_at",
         sa.DateTime,
@@ -24,7 +32,6 @@ users = sa.Table(
 
 
 class User:
-
     def __init__(self, db, data, *kw):
         self.db = db
         self.username = data[0]
@@ -44,10 +51,13 @@ class User:
         if not user.rowcount:
             async with self.db.acquire() as conn:
                 await conn.execute(
-                    users.insert().values(username=self.username,
-                                          password=self.pass_hash,
-                                          name=self.name,
-                                          age=self.age))
+                    users.insert().values(
+                        username=self.username,
+                        password=self.pass_hash,
+                        name=self.name,
+                        age=self.age,
+                    )
+                )
             result = True
         else:
             result = False
@@ -74,4 +84,3 @@ class User:
         name = row[3]
         age = row[4]
         return [id, username, name, age]
-

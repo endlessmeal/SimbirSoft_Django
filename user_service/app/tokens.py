@@ -7,9 +7,6 @@ from settings import JWT
 import math
 from aiohttp import web
 
-SECRET_KEY = JWT["SECRET"]
-ALGORITHM = JWT["ALGORITHM"]
-
 
 def convert_json_status(message):
     return json.dumps({"status": message})
@@ -42,7 +39,7 @@ async def create_access_token(data: dict,
     else:
         expire = datetime.utcnow() + timedelta(minutes=15)
     to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, JWT["SECRET"], algorithm=JWT["ALGORITHM"])
     return encoded_jwt
 
 
@@ -52,7 +49,7 @@ def time_to_float(access_token_expires):
 
 async def decode_jwt(access_token):
     try:
-        decoded_jwt = jwt.decode(access_token, SECRET_KEY, algorithms=ALGORITHM)
+        decoded_jwt = jwt.decode(access_token, JWT["SECRET"], algorithms=JWT["ALGORITHM"])
     except jwt.ExpiredSignatureError as j:
         return web.Response(
             content_type="application/json",

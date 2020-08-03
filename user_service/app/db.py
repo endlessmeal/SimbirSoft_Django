@@ -49,8 +49,8 @@ async def login_user(db, username, password):
 
 async def user_info(db, username):
     row = await find_user(db, username)
-    id = row[0]
-    username = row[1]
-    name = row[3]
-    age = row[4]
+    id = row['UUID']
+    username = row['username']
+    name = row['name']
+    age = row['age']
     return [id, username, name, age]

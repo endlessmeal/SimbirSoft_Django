@@ -9,6 +9,7 @@ from settings import JWT
 import tokens
 from db import create_user, hash_password, login_user, user_info
 from models import TableUser
+
 SECRET_KEY = JWT["SECRET"]
 ALGORITHM = JWT["ALGORITHM"]
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -49,11 +50,14 @@ async def signin(request):
           type: string
           paramType: form
     """
+
+    req = await request.post()
+
     data = [
-        request.rel_url.query["username"],
-        await hash_password(request.rel_url.query["password"]),
-        request.rel_url.query["name"],
-        request.rel_url.query["age"],
+        req.get('username'),
+        await hash_password(req.get('password')),
+        req.get('name'),
+        req.get('age'),
     ]
 
     result = await create_user(request.app["db"], data[0],
@@ -93,8 +97,13 @@ async def login(request):
           type: string
           paramType: form
     """
-    data = [request.rel_url.query["username"],
-            request.rel_url.query["password"]]
+
+    req = await request.post()
+
+    data = [
+        req.get('username'),
+        req.get('password'),
+    ]
 
     result = await login_user(request.app['db'], data[0], data[1])
     if not result:
@@ -105,9 +114,9 @@ async def login(request):
     session = await new_session(request)
     user_credits = await user_info(request.app['db'], data[0])
 
-    # creating a new access token for user with his uuid and name
+    # creating a new access token for user with his uuid and username
     access_token = await tokens.create_access_token(
-        data={"uuid": user_credits[0], "name": user_credits[2]},
+        data={"uuid": user_credits[0], "username": user_credits[1]},
         expires_delta=access_token_expires,
     )
 
@@ -180,17 +189,21 @@ async def get_user_info(request):
           type: "string"
     """
     access_token = request.headers["Authorization"]
-    decoded_jwt = tokens.decode_jwt(access_token)
 
-    uuid = decoded_jwt["uuid"]
-    # get a row with uuid which encoded in jwt and returns info about user
-    async with request.app["db"].acquire() as conn:
-        s = sa.select([TableUser]).where(TableUser.UUID == uuid)
-        execute_query = await conn.execute(s)
-        fetch_res = await execute_query.fetchone()
-    username = fetch_res[1]
-    name = fetch_res[3]
-    age = fetch_res[4]
+    try:
+        decoded_jwt = await tokens.decode_jwt(access_token)
+    except jwt.exceptions.DecodeError as dec:
+        return web.json_response(text=f'Something went wrong: {dec}')
+
+    try:
+        username = decoded_jwt["username"]
+    except KeyError:
+        return web.json_response(text='Refresh your tokens')
+
+    user_credits = await user_info(request.app['db'], username)
+    username = user_credits[1]
+    name = user_credits[2]
+    age = user_credits[3]
 
     return web.Response(
         content_type="application/json",
@@ -234,7 +247,7 @@ async def get_new_tokens(request):
 
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         ac_tok = await tokens.create_access_token(
-            data={"uuid": decoded_access["uuid"], "name": decoded_access["name"]},
+            data={"uuid": decoded_access["uuid"], "username": decoded_access["username"]},
             expires_delta=access_token_expires,
         )
 

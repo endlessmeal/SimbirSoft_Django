@@ -1,5 +1,4 @@
 from aiohttp import web
-from models import User, users
 from aiohttp_session import get_session, new_session
 import jwt
 from datetime import timedelta, datetime
@@ -8,6 +7,7 @@ import secrets
 import math
 from settings import JWT
 import tokens
+from db import create_user, hash_password, login_user, user_info
 
 SECRET_KEY = JWT["SECRET"]
 ALGORITHM = JWT["ALGORITHM"]
@@ -51,24 +51,23 @@ async def signin(request):
     """
     data = [
         request.rel_url.query["username"],
-        request.rel_url.query["password"],
+        await hash_password(request.rel_url.query["password"]),
         request.rel_url.query["name"],
         request.rel_url.query["age"],
     ]
 
-    user = User(request.app["db"], data)
-    # creating a new user
-    result = await user.create_user()
+    result = await create_user(request.app["db"], data[0],
+                               data[1], data[2], data[3])
     if result:
         return web.Response(
             content_type="application/json",
             text=tokens.convert_json_status("Success")
         )
-    else:
-        return web.Response(
-            content_type="application/json",
-            text=tokens.convert_json_status("User exists"),
-        )
+
+    return web.Response(
+        content_type="application/json",
+        text=tokens.convert_json_status("User exists"),
+    )
 
 
 async def login(request):
@@ -97,18 +96,18 @@ async def login(request):
     data = [request.rel_url.query["username"],
             request.rel_url.query["password"]]
 
-    user = User(request.app["db"], data)
-    result = await user.login_user()
+    result = await login_user(request.app['db'], data[0], data[1])
     if not result:
         raise web.HTTPUnauthorized(text="Incorrect username or password")
 
     # add an expire time to access token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     session = await new_session(request)
-    user_info = await user.user_info()
+    user_credits = await user_info(request.app['db'], data[0])
+
     # creating a new access token for user with his uuid and name
     access_token = await tokens.create_access_token(
-        data={"uuid": user_info[0], "name": user_info[2]},
+        data={"uuid": user_credits[0], "name": user_credits[2]},
         expires_delta=access_token_expires,
     )
 
@@ -185,18 +184,18 @@ async def get_user_info(request):
 
     uuid = decoded_jwt["uuid"]
     # get a row with uuid which encoded in jwt and returns info about user
-    async with request.app["db"].acquire() as conn:
-        s = sa.select([users]).where(users.c.UUID == uuid)
-        execute_query = await conn.execute(s)
-        fetch_res = await execute_query.fetchone()
-    username = fetch_res[1]
-    name = fetch_res[3]
-    age = fetch_res[4]
+    # async with request.app["db"].acquire() as conn:
+    #     s = sa.select([users]).where(users.c.UUID == uuid)
+    #     execute_query = await conn.execute(s)
+    #     fetch_res = await execute_query.fetchone()
+    # username = fetch_res[1]
+    # name = fetch_res[3]
+    # age = fetch_res[4]
 
-    return web.Response(
-        content_type="application/json",
-        text=tokens.convert_json_info(username, name, age),
-    )
+    # return web.Response(
+    #     content_type="application/json",
+    #     text=tokens.convert_json_info(username, name, age),
+    # )
 
 
 async def get_new_tokens(request):

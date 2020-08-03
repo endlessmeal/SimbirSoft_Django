@@ -21,7 +21,7 @@ def upgrade():
     op.create_table(
         'users',
         sa.Column(str(UUID(as_uuid=True)), sa.String, primary_key=True, default=uuid.uuid4, unique=True, nullable=False),
-        sa.Column('username', sa.String(50), unique=True, nullable=False),
+        sa.Column('username', sa.String, unique=True, nullable=False),
         sa.Column('password', sa.String, nullable=False),
         sa.Column('name', sa.String, nullable=False),
         sa.Column('age', sa.Integer, nullable=False),

@@ -8,7 +8,7 @@ import math
 from settings import JWT
 import tokens
 from db import create_user, hash_password, login_user, user_info
-
+from models import TableUser
 SECRET_KEY = JWT["SECRET"]
 ALGORITHM = JWT["ALGORITHM"]
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
@@ -184,18 +184,18 @@ async def get_user_info(request):
 
     uuid = decoded_jwt["uuid"]
     # get a row with uuid which encoded in jwt and returns info about user
-    # async with request.app["db"].acquire() as conn:
-    #     s = sa.select([users]).where(users.c.UUID == uuid)
-    #     execute_query = await conn.execute(s)
-    #     fetch_res = await execute_query.fetchone()
-    # username = fetch_res[1]
-    # name = fetch_res[3]
-    # age = fetch_res[4]
+    async with request.app["db"].acquire() as conn:
+        s = sa.select([TableUser]).where(TableUser.UUID == uuid)
+        execute_query = await conn.execute(s)
+        fetch_res = await execute_query.fetchone()
+    username = fetch_res[1]
+    name = fetch_res[3]
+    age = fetch_res[4]
 
-    # return web.Response(
-    #     content_type="application/json",
-    #     text=tokens.convert_json_info(username, name, age),
-    # )
+    return web.Response(
+        content_type="application/json",
+        text=tokens.convert_json_info(username, name, age),
+    )
 
 
 async def get_new_tokens(request):

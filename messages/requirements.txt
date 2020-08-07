@@ -5,4 +5,5 @@ uvicorn>=0.11
 gunicorn>=20.0
 gino-starlette>=0.1
 python-dotenv>=0.14
-
+aio-pika>=6.6.1
+aiosmtplib>=1.1.3

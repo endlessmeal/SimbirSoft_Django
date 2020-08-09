@@ -16,7 +16,6 @@ class Template(db.Model):
     )
     name = db.Column("name", db.String, nullable=False)
     text = db.Column("text", db.String, nullable=False)
-    created_at = db.Column("created_at", db.DateTime, nullable=False,
-                           server_default=db.func.now())
-
-
+    created_at = db.Column(
+        "created_at", db.DateTime, nullable=False, server_default=db.func.now()
+    )

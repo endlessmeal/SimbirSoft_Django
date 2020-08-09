@@ -1,6 +1,7 @@
 from .server import get_app
 import asyncio
 from messages.app.amqp.listener import listener
+
 app = get_app()
 
 
@@ -8,5 +9,3 @@ app = get_app()
 def startup():
     loop = asyncio.get_event_loop()
     asyncio.ensure_future(listener(loop))
-
-

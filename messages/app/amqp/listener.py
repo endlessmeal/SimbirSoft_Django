@@ -2,15 +2,17 @@ import asyncio
 import aio_pika
 import aiosmtplib
 from email.message import EmailMessage
+import json
 
 
 async def process_message(message: aio_pika.IncomingMessage):
     async with message.process():
         email_message = EmailMessage()
-        email_message["From"] = "your mail"
-        email_message["To"] = "mail to receive"
-        email_message["Subject"] = "Hi everyone"
-        email_message.set_content(message.body.decode("utf-8"))
+        msg = json.loads(message.body.decode("utf-8"))
+        email_message["From"] = "sender email"
+        email_message["To"] = msg["to"]
+        email_message["Subject"] = "No subject"
+        email_message.set_content(msg["text"])
 
         await aiosmtplib.send(email_message, hostname="mail", port=25)
         await asyncio.sleep(1)
@@ -22,7 +24,6 @@ async def listener(loop):
     )
 
     queue_name = "messages"
-
 
     # Creating channel
     channel = await connection.channel()

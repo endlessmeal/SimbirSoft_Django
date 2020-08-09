@@ -2,9 +2,10 @@ from starlette.config import Config
 from starlette.datastructures import Secret
 from sqlalchemy.engine.url import make_url, URL
 from dotenv import load_dotenv
+
 load_dotenv()
 
-config = Config('.env')
+config = Config(".env")
 
 
 DB_DRIVER = config("DB_DRIVER", default="postgresql")
@@ -28,4 +29,3 @@ DB_DSN = config(
 DB_POOL_MIN_SIZE = config("MINSIZE", cast=int, default=1)
 DB_POOL_MAX_SIZE = config("MAXSIZE", cast=int, default=16)
 DB_ECHO = config("ECHO", cast=bool, default=False)
-

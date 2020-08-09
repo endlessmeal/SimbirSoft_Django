@@ -1,11 +1,10 @@
 from fastapi import APIRouter
 from pydantic import BaseModel
 from fastapi.responses import JSONResponse
-from gino.api import Gino
 from ..models.templates import Template
 from ..amqp.publisher import publisher
 
-from sqlalchemy.sql import select
+from .templates_stuff import temp_text, msg_to_json
 
 router = APIRouter()
 
@@ -16,7 +15,9 @@ class TemplateModel(BaseModel):
 
 
 class MessageModel(BaseModel):
-    msg_text: str
+    temp_uuid: str
+    msg_to: str
+    params: dict
 
 
 @router.get("/templates/{uid}")
@@ -31,6 +32,13 @@ async def add_template(template: TemplateModel):
     return rv.to_dict()
 
 
+@router.post("/templates/all")
+async def get_all_templates():
+    templates = await Template.query.gino.all()
+    temp_list = [temp.to_dict() for temp in templates]
+    return temp_list
+
+
 @router.delete("/templates/{uid}")
 async def delete_template(uid: str):
     temp = await Template.get_or_404(uid)
@@ -40,8 +48,10 @@ async def delete_template(uid: str):
 
 @router.post("/templates/send")
 async def send_msg(message: MessageModel):
-    msg_text = message.msg_text
-    await publisher(msg_text)
+    template = await Template.get_or_404(message.temp_uuid)
+    msg_text = temp_text(template, message.params)
+    msg = msg_to_json(msg_text, message.msg_to)
+    await publisher(msg)
     return JSONResponse(content="Message has been sent!")
 
 

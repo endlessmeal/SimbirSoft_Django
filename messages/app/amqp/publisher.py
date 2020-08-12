@@ -1,8 +1,11 @@
 import aio_pika
+from dotenv import load_dotenv
+from ..config import BROKER_CONN_URI
+load_dotenv()
 
 
 async def publisher(msg):
-    connection = await aio_pika.connect("amqp://guest:guest@rabbit/", port=5672)
+    connection = await aio_pika.connect(BROKER_CONN_URI, port=5672)
 
     routing_key = "messages"
 

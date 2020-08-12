@@ -20,33 +20,33 @@ class MessageModel(BaseModel):
     params: dict
 
 
-@router.get("/templates/{uid}")
+@router.get("/api/v1/templates/{uid}")
 async def get_template(uid: str):
     temp = await Template.get_or_404(uid)
     return temp.to_dict()
 
 
-@router.post("/templates")
+@router.post("/api/v1/templates")
 async def add_template(template: TemplateModel):
     rv = await Template.create(name=template.name, text=template.text)
     return rv.to_dict()
 
 
-@router.post("/templates/all")
+@router.post("/api/v1/templates/all")
 async def get_all_templates():
     templates = await Template.query.gino.all()
     temp_list = [temp.to_dict() for temp in templates]
     return temp_list
 
 
-@router.delete("/templates/{uid}")
+@router.delete("/api/v1/templates/{uid}")
 async def delete_template(uid: str):
     temp = await Template.get_or_404(uid)
     await temp.delete()
     return dict(uuid=uid)
 
 
-@router.post("/templates/send")
+@router.post("/api/v1/templates/send")
 async def send_msg(message: MessageModel):
     template = await Template.get_or_404(message.temp_uuid)
     msg_text = temp_text(template, message.params)

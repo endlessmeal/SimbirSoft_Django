@@ -9,8 +9,7 @@ Base = declarative_base(metadata=sa.MetaData())
 class TableUser(Base):
     __tablename__ = 'users'
     UUID = sa.Column(
-        str(UUID(as_uuid=True)),
-        sa.String,
+        UUID(as_uuid=True),
         primary_key=True,
         default=uuid.uuid4,
         unique=True,

@@ -7,7 +7,7 @@ import secrets
 import math
 from settings import JWT
 import tokens
-from db import create_user, hash_password, login_user, user_info
+from .db import create_user, hash_password, login_user, user_info
 from models import TableUser
 
 SECRET_KEY = JWT["SECRET"]
@@ -53,15 +53,15 @@ async def signin(request):
 
     req = await request.post()
 
-    data = [
-        req.get('username'),
-        await hash_password(req.get('password')),
-        req.get('name'),
-        req.get('age'),
-    ]
+    data = {
+        'username': req.get('username'),
+        'password': await hash_password(req.get('password')),
+        'name': req.get('name'),
+        'age': req.get('age'),
+    }
 
-    result = await create_user(request.app["db"], data[0],
-                               data[1], data[2], data[3])
+    result = await create_user(request.app["db"], data['username'],
+                               data['password'], data['name'], data['age'])
     if result:
         return web.Response(
             content_type="application/json",
@@ -100,19 +100,19 @@ async def login(request):
 
     req = await request.post()
 
-    data = [
-        req.get('username'),
-        req.get('password'),
-    ]
+    data = {
+        'username': req.get('username'),
+        'password': req.get('password'),
+    }
 
-    result = await login_user(request.app['db'], data[0], data[1])
+    result = await login_user(request.app['db'], data['username'], data['password'])
     if not result:
         raise web.HTTPUnauthorized(text="Incorrect username or password")
 
     # add an expire time to access token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     session = await new_session(request)
-    user_credits = await user_info(request.app['db'], data[0])
+    user_credits = await user_info(request.app['db'], data['username'])
 
     # creating a new access token for user with his uuid and username
     access_token = await tokens.create_access_token(
@@ -272,3 +272,4 @@ async def get_new_tokens(request):
         content_type="application/json",
         text=tokens.convert_json_status("Refresh token has expired"),
     )
+

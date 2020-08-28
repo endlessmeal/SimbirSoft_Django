@@ -37,7 +37,7 @@ class RequestToken(BaseModel):
     address: EmailStr
 
 
-@user_routes.post("/api/v1/users/login")
+@user_routes.post("/api/v1/users/login", tags=["users"])
 async def users_login(username: str = Form(None), password: str = Form(None)):
     req = dict(username=username, password=password)
     async with httpx.AsyncClient() as client:
@@ -46,7 +46,7 @@ async def users_login(username: str = Form(None), password: str = Form(None)):
         return JSONResponse(content=resp_json)
 
 
-@user_routes.post("/api/v1/users/signin")
+@user_routes.post("/api/v1/users/signin", tags=["users"])
 async def users_signin(
     username: str = Form(None),
     password: str = Form(None),
@@ -66,7 +66,7 @@ async def users_signin(
     return JSONResponse("Something went wrong")
 
 
-@user_routes.post("/api/v1/users/request_token")
+@user_routes.post("/api/v1/users/request_token", tags=["users"])
 async def users_token(mail: RequestToken):
     redis = await make_redis_pool()
     token = create_token()
@@ -84,7 +84,7 @@ async def users_token(mail: RequestToken):
     return JSONResponse(content=resp_json)
 
 
-@user_routes.post("/api/v1/users/logout")
+@user_routes.post("/api/v1/users/logout", tags=["users"])
 async def users_logout(token: AccessToken):
     req = dict(jwt_token=token.jwt_token)
     async with httpx.AsyncClient() as client:
@@ -93,7 +93,7 @@ async def users_logout(token: AccessToken):
         return JSONResponse(content=resp_json)
 
 
-@user_routes.post("/api/v1/users/user_info")
+@user_routes.post("/api/v1/users/user_info", tags=["users"])
 async def users_info(token: AccessToken):
     req = dict(jwt_token=token.jwt_token)
     async with httpx.AsyncClient() as client:
@@ -102,7 +102,7 @@ async def users_info(token: AccessToken):
         return JSONResponse(content=resp_json)
 
 
-@user_routes.post("/api/v1/users/new_tokens")
+@user_routes.post("/api/v1/users/new_tokens", tags=["users"])
 async def users_new_tokens(tokens: RefreshTokens):
     req = dict(jwt=tokens.jwt_token, refresh=tokens.refresh_token)
     async with httpx.AsyncClient() as client:

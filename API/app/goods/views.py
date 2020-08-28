@@ -25,7 +25,7 @@ class AdDelete(BaseModel):
     jwt: str
 
 
-@goods_routes.post("/api/v1/goods/add")
+@goods_routes.post("/api/v1/goods/add", tags=["goods"])
 async def goods_add(ad: Ad):
     check_req = {"jwt_token": ad.jwt}
     async with httpx.AsyncClient() as client:
@@ -45,35 +45,35 @@ async def goods_add(ad: Ad):
         return JSONResponse(content="Something went wrong")
 
 
-@goods_routes.get("/api/v1/goods/all")
+@goods_routes.get("/api/v1/goods/all", tags=["goods"])
 async def goods_all():
     async with httpx.AsyncClient() as client:
         resp = await client.get(f"{goods_url}/api/v1/ad/all/")
         return await main_response(resp)
 
 
-@goods_routes.get("/api/v1/goods/tags")
+@goods_routes.get("/api/v1/goods/tags", tags=["goods"])
 async def tags_all():
     async with httpx.AsyncClient() as client:
         resp = await client.get(f"{goods_url}/api/v1/tag/all/")
         return await main_response(resp)
 
 
-@goods_routes.post("/api/v1/goods/entiread")
+@goods_routes.post("/api/v1/goods/entiread", tags=["goods"])
 async def goods_ad(id_ad: AdId):
     async with httpx.AsyncClient() as client:
         resp = await client.get(f"{goods_url}/api/v1/ad/full/{id_ad.id}/")
         return await main_response(resp)
 
 
-@goods_routes.post("/api/v1/goods/fastlook")
+@goods_routes.post("/api/v1/goods/fastlook", tags=["goods"])
 async def goods_fast(id_ad: AdId):
     async with httpx.AsyncClient() as client:
         resp = await client.get(f"{goods_url}/api/v1/ad/{id_ad.id}/")
         return await main_response(resp)
 
 
-@goods_routes.put("/api/v1/goods/edit")
+@goods_routes.put("/api/v1/goods/edit", tags=["goods"])
 async def goods_edit_put(ad: Ad, ad_id: AdId):
     check_req = {"jwt_token": ad.jwt}
     async with httpx.AsyncClient() as client:
@@ -93,7 +93,7 @@ async def goods_edit_put(ad: Ad, ad_id: AdId):
         return JSONResponse(content="Something went wrong")
 
 
-@goods_routes.delete("/api/v1/goods/edit")
+@goods_routes.delete("/api/v1/goods/edit", tags=["goods"])
 async def goods_edit_delete(ad: AdDelete):
     check_req = {"jwt_token": ad.jwt}
     async with httpx.AsyncClient() as client:

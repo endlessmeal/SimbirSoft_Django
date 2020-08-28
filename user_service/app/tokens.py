@@ -1,5 +1,4 @@
 import json
-from aiohttp_session import get_session
 from typing import Optional
 from datetime import timedelta, datetime
 import jwt
@@ -25,14 +24,12 @@ def convert_json_tokens(ac_tok, ac_exp, rf_tok, rf_exp):
     )
 
 
-async def del_session(request):
-    session = await get_session(request)
-    session.invalidate()
-    del session
+async def del_session(request, jwt):
+    redis = request.app["redis"]
+    await redis.delete(jwt)
 
 
-async def create_access_token(data: dict,
-                              expires_delta: Optional[timedelta] = None):
+async def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
@@ -49,7 +46,9 @@ def time_to_float(access_token_expires):
 
 async def decode_jwt(access_token):
     try:
-        decoded_jwt = jwt.decode(access_token, JWT["SECRET"], algorithms=JWT["ALGORITHM"])
+        decoded_jwt = jwt.decode(
+            access_token, JWT["SECRET"], algorithms=JWT["ALGORITHM"]
+        )
     except jwt.ExpiredSignatureError as j:
         return web.Response(
             content_type="application/json",

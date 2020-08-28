@@ -1,9 +1,7 @@
-import aiohttp_session
 from aiohttp import web
-from views import signin, login, get_user_info, get_new_tokens, logout
+from views import signin, login, get_user_info, get_new_tokens, logout, validate
 from aiopg.sa import create_engine
 import aioredis
-from aiohttp_session.redis_storage import RedisStorage
 import asyncio
 from settings import DATABASE, REDIS
 from aiohttp_swagger import setup_swagger
@@ -40,23 +38,22 @@ async def init_pg(app):
 
 async def make_redis_pool():
     redis_address = (REDIS["HOST"], REDIS["PORT"])
-    return await aioredis.create_pool(redis_address,
-                                      create_connection_timeout=1,)
+    return await aioredis.create_redis_pool(redis_address)
 
 
 def make_app():
     loop = asyncio.get_event_loop()
     redis_pool = loop.run_until_complete(make_redis_pool())
-    storage = RedisStorage(redis_pool)
-    session_middleware = aiohttp_session.session_middleware(storage)
 
-    app = web.Application(middlewares=[session_middleware])
+    app = web.Application()
+    app["redis"] = redis_pool
     app["config"] = conf
     app.router.add_post("/api/v1/signin", signin)
     app.router.add_post("/api/v1/login", login)
-    app.router.add_get("/api/v1/info", get_user_info)
-    app.router.add_get("/api/v1/newtokens", get_new_tokens)
-    app.router.add_get("/api/v1/logout", logout)
+    app.router.add_post("/api/v1/info", get_user_info)
+    app.router.add_post("/api/v1/newtokens", get_new_tokens)
+    app.router.add_post("/api/v1/logout", logout)
+    app.router.add_post("/api/v1/validate", validate)
     setup_swagger(
         app,
         title="User authentication",

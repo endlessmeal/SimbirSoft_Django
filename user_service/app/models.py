@@ -7,7 +7,7 @@ Base = declarative_base(metadata=sa.MetaData())
 
 
 class TableUser(Base):
-    __tablename__ = 'users'
+    __tablename__ = "users"
     UUID = sa.Column(
         UUID(as_uuid=True),
         primary_key=True,
@@ -19,8 +19,9 @@ class TableUser(Base):
     password = sa.Column("password", sa.String, nullable=False)
     name = sa.Column("name", sa.String, nullable=False)
     age = sa.Column("age", sa.Integer, nullable=False)
-    created_at = sa.Column("created_at", sa.DateTime, nullable=False,
-                           server_default=sa.func.now())
+    created_at = sa.Column(
+        "created_at", sa.DateTime, nullable=False, server_default=sa.func.now()
+    )
     updated_at = sa.Column(
         "updated_at",
         sa.DateTime,
@@ -28,4 +29,3 @@ class TableUser(Base):
         server_default=sa.func.now(),
         server_onupdate=sa.func.now(),
     )
-

@@ -1,4 +1,4 @@
-from . import db
+from messages.app.models import db
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
 
@@ -7,10 +7,9 @@ class Template(db.Model):
     __tablename__ = "templates"
 
     UUID = db.Column(
-        str(UUID(as_uuid=True)),
-        db.String,
+        UUID(as_uuid=True),
         primary_key=True,
-        default=str(uuid.uuid4()),
+        default=uuid.uuid4,
         unique=True,
         nullable=False,
     )

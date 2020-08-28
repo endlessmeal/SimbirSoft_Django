@@ -6,5 +6,5 @@ def temp_text(template, params):
     return temp_dict["text"].format(**params)
 
 
-def msg_to_json(msg_text, msg_to):
-    return json.dumps({"text": msg_text, "to": msg_to})
+def msg_to_json(msg_text, msg_to, msg_subject):
+    return json.dumps({"text": msg_text, "to": msg_to, "subject": msg_subject,})

@@ -18,6 +18,13 @@ class MessageModel(BaseModel):
     temp_uuid: str
     msg_to: str
     params: dict
+    subject: str
+
+
+class BasicMessage(BaseModel):
+    msg_to: str
+    msg_text: str
+    msg_subject: str
 
 
 @router.get("/api/v1/templates/{uid}")
@@ -50,9 +57,16 @@ async def delete_template(uid: str):
 async def send_msg(message: MessageModel):
     template = await Template.get_or_404(message.temp_uuid)
     msg_text = temp_text(template, message.params)
-    msg = msg_to_json(msg_text, message.msg_to)
+    msg = msg_to_json(msg_text, message.msg_to, message.subject)
     await publisher(msg)
     return JSONResponse(content="Message has been sent!")
+
+
+@router.post("/api/v1/send")
+async def send_basic_msg(message: dict):
+    msg = msg_to_json(message["msg_text"], message["msg_to"], message["msg_subject"])
+    await publisher(msg)
+    return JSONResponse(content="ok")
 
 
 def init_app(app):

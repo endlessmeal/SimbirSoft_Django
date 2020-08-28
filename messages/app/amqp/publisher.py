@@ -1,6 +1,7 @@
 import aio_pika
 from dotenv import load_dotenv
-from ..config import BROKER_CONN_URI
+from messages.app.config import BROKER_CONN_URI
+
 load_dotenv()
 
 

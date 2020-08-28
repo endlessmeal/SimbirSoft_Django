@@ -1,8 +1,8 @@
-"""add stat table
+"""add stats table
 
-Revision ID: c152acc3da27
+Revision ID: c33f852453c7
 Revises: 
-Create Date: 2020-08-12 15:42:24.394536
+Create Date: 2020-08-28 19:27:27.932115
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision = "c152acc3da27"
+revision = "c33f852453c7"
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -24,18 +24,8 @@ def upgrade():
         sa.Column("service", sa.String(), nullable=False),
         sa.Column("url", sa.String(), nullable=False),
         sa.Column("status_code", sa.Integer(), nullable=True),
-        sa.Column(
-            "response_time",
-            sa.DateTime(),
-            server_default=sa.text("now()"),
-            nullable=True,
-        ),
-        sa.Column(
-            "request_timestamp",
-            sa.DateTime(),
-            server_default=sa.text("now()"),
-            nullable=True,
-        ),
+        sa.Column("response_time", sa.Float(), nullable=True),
+        sa.Column("request_timestamp", sa.Float(), nullable=True),
         sa.PrimaryKeyConstraint("UUID"),
         sa.UniqueConstraint("UUID"),
     )

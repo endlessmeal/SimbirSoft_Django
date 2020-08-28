@@ -1,5 +1,5 @@
 from gino_starlette import Gino
-from .. import config
+from messages.app import config
 
 db = Gino(
     dsn=config.DB_DSN,

@@ -31,3 +31,10 @@ DB_POOL_MAX_SIZE = config("MAXSIZE", cast=int, default=16)
 DB_ECHO = config("ECHO", cast=bool, default=False)
 
 BROKER_CONN_URI = config("BROKER_CONN_URI")
+SENDER = config("SENDER")
+
+SMTP_PORT = config("SMTP_PORT")
+RABBIT_PORT = config("RABBIT_PORT")
+
+QUEUE_NAME = config("QUEUE_NAME")
+MAX_COUNT = config("MAX_COUNT")

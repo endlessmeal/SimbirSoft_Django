@@ -1,7 +1,7 @@
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config
-from sqlalchemy import pool, MetaData
+from sqlalchemy import pool
 
 from alembic import context
 
@@ -13,24 +13,11 @@ config = context.config
 # This line sets up loggers basically.
 fileConfig(config.config_file_name)
 
-convention = {
-    "all_column_names": lambda constraint, table: "_".join(
-        [column.name for column in constraint.columns.values()]
-    ),
-    # Именование индексов
-    "ix": "ix__%(table_name)s__%(all_column_names)s",
-    # Именование уникальных индексов
-    "uq": "uq__%(table_name)s__%(all_column_names)s",
-    # Именование CHECK-constraint-ов
-    "ck": "ck__%(table_name)s__%(constraint_name)s",
-    # Именование внешних ключей
-    "fk": "fk__%(table_name)s__%(all_column_names)s__%(referred_table_name)s",
-    # Именование первичных ключей
-    "pk": "pk__%(table_name)s",
-}
-metadata = MetaData(naming_convention=convention)
-
-target_metadata = metadata
+# add your model's MetaData object here
+# for 'autogenerate' support
+# from myapp import mymodel
+# target_metadata = mymodel.Base.metadata
+target_metadata = None
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:

@@ -1,14 +1,12 @@
-from aiohttp import web
-from aiohttp_session import get_session, new_session
-import jwt
-from datetime import timedelta, datetime
-import sqlalchemy as sa
-import secrets
 import math
-from settings import JWT
+import secrets
+from datetime import timedelta, datetime
+
+import jwt
 import tokens
-from .db import create_user, hash_password, login_user, user_info
-from models import TableUser
+from aiohttp import web
+from db import create_user, hash_password, login_user, user_info
+from settings import JWT
 
 SECRET_KEY = JWT["SECRET"]
 ALGORITHM = JWT["ALGORITHM"]
@@ -54,23 +52,22 @@ async def signin(request):
     req = await request.post()
 
     data = {
-        'username': req.get('username'),
-        'password': await hash_password(req.get('password')),
-        'name': req.get('name'),
-        'age': req.get('age'),
+        "username": req.get("username"),
+        "password": await hash_password(req.get("password")),
+        "name": req.get("name"),
+        "age": req.get("age"),
     }
 
-    result = await create_user(request.app["db"], data['username'],
-                               data['password'], data['name'], data['age'])
+    result = await create_user(
+        request.app["db"], data["username"], data["password"], data["name"], data["age"]
+    )
     if result:
         return web.Response(
-            content_type="application/json",
-            text=tokens.convert_json_status("Success")
+            content_type="application/json", text=tokens.convert_json_status("Success")
         )
 
     return web.Response(
-        content_type="application/json",
-        text=tokens.convert_json_status("User exists"),
+        content_type="application/json", text=tokens.convert_json_status("User exists"),
     )
 
 
@@ -101,43 +98,38 @@ async def login(request):
     req = await request.post()
 
     data = {
-        'username': req.get('username'),
-        'password': req.get('password'),
+        "username": req.get("username"),
+        "password": req.get("password"),
     }
 
-    result = await login_user(request.app['db'], data['username'], data['password'])
+    result = await login_user(request.app["db"], data["username"], data["password"])
     if not result:
         raise web.HTTPUnauthorized(text="Incorrect username or password")
 
     # add an expire time to access token
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    session = await new_session(request)
-    user_credits = await user_info(request.app['db'], data['username'])
+    user_credits = await user_info(request.app["db"], data["username"])
 
     # creating a new access token for user with his uuid and username
     access_token = await tokens.create_access_token(
-        data={"uuid": user_credits[0], "username": user_credits[1]},
+        data={"uuid": str(user_credits["id"]), "username": user_credits["username"]},
         expires_delta=access_token_expires,
     )
 
-    # add an access token to session and decode from bytes
-    session["access_token"] = access_token.decode("utf-8")
-    # generate a refresh token
-    session["refresh_token"] = secrets.token_hex(32)
-    # add an expire time for refresh token start from current time and end in one month
-    session["refresh_token_exp"] = math.ceil(
-        (datetime.utcnow() + timedelta(days=30)).timestamp()
-    )
+    refresh_token = secrets.token_hex(32)
+
+    refresh_exp = math.ceil((datetime.utcnow() + timedelta(days=30)).timestamp())
+
+    redis = request.app["redis"]
+    await redis.set(access_token.decode("utf-8"), refresh_token)
+    await redis.expireat(access_token.decode("utf-8"), refresh_exp)
+
     # convert timestamp to float
     num_ac_tok_exp = tokens.time_to_float(access_token_expires)
 
     return web.Response(
-        content_type="application/json",
         text=tokens.convert_json_tokens(
-            session["access_token"],
-            num_ac_tok_exp,
-            session["refresh_token"],
-            session["refresh_token_exp"],
+            access_token.decode("utf-8"), num_ac_tok_exp, refresh_token, refresh_exp,
         ),
         status=200,
     )
@@ -160,11 +152,11 @@ async def logout(request):
         schema:
           type: "string"
     """
-    access_token = request.headers["Authorization"]
-    if access_token is None:
-        raise web.HTTPForbidden(reason="Access key is empty")
-
-    await tokens.del_session(request)
+    try:
+        data = await request.post()
+    except Exception:
+        raise web.HTTPBadRequest(reason="json is invalid")
+    await tokens.del_session(request, data["jwt_token"])
     return web.Response(
         content_type="application/json",
         text=tokens.convert_json_status("You are logged out"),
@@ -188,22 +180,25 @@ async def get_user_info(request):
         schema:
           type: "string"
     """
-    access_token = request.headers["Authorization"]
+    try:
+        data = await request.post()
+    except Exception:
+        raise web.HTTPBadRequest(reason="json is invalid")
 
     try:
-        decoded_jwt = await tokens.decode_jwt(access_token)
+        decoded_jwt = await tokens.decode_jwt(data["jwt_token"])
     except jwt.exceptions.DecodeError as dec:
-        return web.json_response(text=f'Something went wrong: {dec}')
+        return web.json_response(text=f"Something went wrong: {dec}")
 
     try:
         username = decoded_jwt["username"]
     except KeyError:
-        return web.json_response(text='Refresh your tokens')
+        return web.json_response(text="Refresh your tokens")
 
-    user_credits = await user_info(request.app['db'], username)
-    username = user_credits[1]
-    name = user_credits[2]
-    age = user_credits[3]
+    user_credits = await user_info(request.app["db"], username)
+    username = user_credits["username"]
+    name = user_credits["name"]
+    age = user_credits["age"]
 
     return web.Response(
         content_type="application/json",
@@ -228,48 +223,97 @@ async def get_new_tokens(request):
         schema:
           type: "string"
     """
-    refresh_token = request.headers["Authorization"]
-    session = await get_session(request)
-    rfr = session["refresh_token"]
-    access_token = session["access_token"]
-    rfr_exp = session["refresh_token_exp"]
-    if refresh_token != rfr:
+
+    try:
+        data = await request.post()
+    except Exception:
+        raise web.HTTPBadRequest(reason="json is invalid")
+
+    redis = request.app["redis"]
+
+    refresh_stored = await redis.get(data["jwt"], encoding="utf-8")
+    if refresh_stored != data["refresh"]:
         return web.Response(
             content_type="application/json",
-            text=tokens.convert_json_status("Incorrect refresh token"),
+            text=tokens.convert_json_status("Incorrect jwt token"),
         )
+
+    rfr_exp = math.ceil((datetime.utcnow() + timedelta(days=30)).timestamp())
 
     # check if refresh token expires
     if rfr_exp - math.ceil(datetime.utcnow().timestamp()) > 0:
         decoded_access = jwt.decode(
-            access_token, SECRET_KEY, verify=False, algorithms=ALGORITHM
+            data["jwt"], SECRET_KEY, verify=False, algorithms=ALGORITHM
         )
 
         access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         ac_tok = await tokens.create_access_token(
-            data={"uuid": decoded_access["uuid"], "username": decoded_access["username"]},
+            data={
+                "uuid": decoded_access["uuid"],
+                "username": decoded_access["username"],
+            },
             expires_delta=access_token_expires,
         )
 
-        session["access_token"] = ac_tok.decode("utf-8")
-        session["refresh_token"] = secrets.token_hex(32)
+        rfr_token = secrets.token_hex(32)
+
+        await redis.set(ac_tok.decode("utf-8"), rfr_token)
+        await redis.expireat(ac_tok.decode("utf-8"), rfr_exp)
+
         num_ac_tok_exp = tokens.time_to_float(access_token_expires)
+        await tokens.del_session(request, data["jwt"])
 
         return web.Response(
             content_type="application/json",
             text=tokens.convert_json_tokens(
-                session["access_token"],
-                num_ac_tok_exp,
-                session["refresh_token"],
-                session["refresh_token_exp"],
+                ac_tok.decode("utf-8"), num_ac_tok_exp, rfr_token, rfr_exp,
             ),
             status=200,
         )
 
-    session.clear()
     await logout(request)
     return web.Response(
         content_type="application/json",
         text=tokens.convert_json_status("Refresh token has expired"),
     )
 
+
+async def validate(request):
+    """
+    ---
+    description: This end-point avalidates token
+    tags:
+        - Auth
+    produces:
+        - application/json
+    consumes:
+      - application/json
+    parameters:
+      - in: header
+        name: "Authorization"
+        required: false
+        schema:
+          type: "string"
+        description: "User's JWT"
+    """
+
+    try:
+        data = await request.post()
+    except Exception:
+        raise web.HTTPBadRequest(reason="json is invalid")
+
+    try:
+        decoded_jwt = await tokens.decode_jwt(data["jwt_token"])
+    except jwt.exceptions.DecodeError as dec:
+        return web.json_response(text=f"Something went wrong: {dec}")
+
+    try:
+        username = decoded_jwt["username"]
+    except KeyError:
+        return web.json_response(text="Refresh your tokens")
+
+    user_credits = await user_info(request.app["db"], username)
+    user_id = user_credits["id"]
+    send_data = dict(user_id=str(user_id))
+
+    return web.json_response(data=send_data, status=200)

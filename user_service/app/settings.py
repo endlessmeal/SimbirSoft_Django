@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+
 load_dotenv()
 
 DATABASE = {
@@ -8,7 +9,7 @@ DATABASE = {
     "PASSWORD": os.getenv("PASSWORD"),
     "HOST": os.getenv("HOST"),
     "PORT": os.getenv("PORT"),
-    "DATABASE": os.getenv("DATABASE")
+    "DATABASE": os.getenv("DATABASE"),
 }
 
 
@@ -17,7 +18,4 @@ JWT = {
     "ALGORITHM": os.getenv("ALGORITHM"),
 }
 
-REDIS = {
-    "HOST": os.getenv("REDIS_HOST"),
-    "PORT": os.getenv("REDIS_PORT")
-}
+REDIS = {"HOST": os.getenv("REDIS_HOST"), "PORT": os.getenv("REDIS_PORT")}

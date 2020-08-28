@@ -20,10 +20,7 @@ async def create_user(db, username, pass_hash, name, age):
         async with db.acquire() as conn:
             await conn.execute(
                 sa.insert(TableUser).values(
-                    username=username,
-                    password=pass_hash,
-                    name=name,
-                    age=age,
+                    username=username, password=pass_hash, name=name, age=age,
                 )
             )
         return True
@@ -41,7 +38,7 @@ async def login_user(db, username, password):
     row = await find_user(db, username)
     if not row:
         return False
-    pass_in_db = row[2]
+    pass_in_db = row["password"]
     if argon2.verify(password, pass_in_db):
         return True
     return False
@@ -49,8 +46,9 @@ async def login_user(db, username, password):
 
 async def user_info(db, username):
     row = await find_user(db, username)
-    id = row['UUID']
-    username = row['username']
-    name = row['name']
-    age = row['age']
-    return [id, username, name, age]
+    return {
+        "id": row["UUID"],
+        "username": row["username"],
+        "name": row["name"],
+        "age": row["age"],
+    }

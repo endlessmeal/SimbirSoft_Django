@@ -18,8 +18,6 @@ services:
       - POSTGRES_PASSWORD=postgres
     volumes:
       - postgres_data:/var/lib/posgresql/data/
-    ports:
-      - "5432:5432"
     networks:
       - app-tier
     healthcheck:
@@ -30,9 +28,14 @@ services:
 
 
   redis:
-    image: 'bitnami/redis:latest'
-    ports:
-    - "6379:6379"
+    image: redis:latest
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    networks:
+      - app-tier
+
+  redis_api:
+    image: redis:latest
     environment:
       - ALLOW_EMPTY_PASSWORD=yes
     networks:
@@ -45,9 +48,6 @@ services:
       RABBITMQ_ERLANG_COOKIE: "TESTVOLUME"
       RABBITMQ_DEFAULT_USER: "guest"
       RABBITMQ_DEFAULT_PASS: "guest"
-    ports:
-      - "15672:15672"
-      - "5672:5672"
     networks:
       - app-tier
     volumes:
@@ -85,23 +85,17 @@ services:
   
   goods:
     build: goods/
-    command: bash -c "python goods/manage.py makemigrations && python goods/manage.py migrate && python goods/manage.py loaddata tag.json && python goods/manage.py runserver 0.0.0.0:8000"
+    command: bash -c "python3 goods/manage.py makemigrations && python3 goods/manage.py migrate && python3 goods/manage.py loaddata tag.json && python3 goods/manage.py runserver 0.0.0.0:8000"
     volumes:
       - .:/code
-    ports:
-      - "8000:8000"
-    depends_on:
-      - db
     networks:
       - app-tier
 
   user_service:
     build: ./user_service
-    command: bash -c "python3 user_service/app/server.py"
+    command: bash -c "python3 user_service/app/server.py && alembic upgrade head"
     volumes:
       - .:/code
-    ports:
-      - "8080:8080"
     depends_on:
       - db
       - redis
@@ -113,8 +107,6 @@ services:
     command: bash -c "uvicorn messages.app.asgi:app --reload --host 0.0.0.0 --port 8008"
     volumes:
       - .:/code
-    ports:
-      - "8008:8008"
     depends_on:
       - db
     networks:
@@ -125,8 +117,6 @@ services:
     command: bash -c "uvicorn monitor_service.app.asgi:app --reload --host 0.0.0.0 --port 8888"
     volumes:
       - .:/code
-    ports:
-      - "8888:8888"
     depends_on:
       - db
       - rabbit
@@ -141,6 +131,16 @@ services:
     depends_on:
       - rabbit
       - db
+    networks:
+      - app-tier
+
+  api:
+    build: ./API
+    command: bash -c "uvicorn API.app.asgi:app --reload --host 0.0.0.0 --port 7777"
+    volumes:
+      - .:/code
+    ports:
+      - "7777:7777"
     networks:
       - app-tier
 

@@ -4,6 +4,7 @@ from sqlalchemy import engine_from_config
 from sqlalchemy import pool, MetaData
 
 from alembic import context
+
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
@@ -13,24 +14,19 @@ config = context.config
 fileConfig(config.config_file_name)
 
 convention = {
-    'all_column_names': lambda constraint, table: '_'.join([
-        column.name for column in constraint.columns.values()
-    ]),
-
+    "all_column_names": lambda constraint, table: "_".join(
+        [column.name for column in constraint.columns.values()]
+    ),
     # Именование индексов
-    'ix': 'ix__%(table_name)s__%(all_column_names)s',
-
+    "ix": "ix__%(table_name)s__%(all_column_names)s",
     # Именование уникальных индексов
-    'uq': 'uq__%(table_name)s__%(all_column_names)s',
-
+    "uq": "uq__%(table_name)s__%(all_column_names)s",
     # Именование CHECK-constraint-ов
-    'ck': 'ck__%(table_name)s__%(constraint_name)s',
-
+    "ck": "ck__%(table_name)s__%(constraint_name)s",
     # Именование внешних ключей
-    'fk': 'fk__%(table_name)s__%(all_column_names)s__%(referred_table_name)s',
-
+    "fk": "fk__%(table_name)s__%(all_column_names)s__%(referred_table_name)s",
     # Именование первичных ключей
-    'pk': 'pk__%(table_name)s'
+    "pk": "pk__%(table_name)s",
 }
 metadata = MetaData(naming_convention=convention)
 
@@ -80,9 +76,7 @@ def run_migrations_online():
     )
 
     with connectable.connect() as connection:
-        context.configure(
-            connection=connection, target_metadata=target_metadata
-        )
+        context.configure(connection=connection, target_metadata=target_metadata)
 
         with context.begin_transaction():
             context.run_migrations()

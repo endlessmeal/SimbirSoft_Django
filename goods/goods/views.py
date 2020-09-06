@@ -5,10 +5,17 @@ from django_filters import rest_framework as filters
 from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from django.forms.models import model_to_dict
 
-from goods.goods.models import Ad, Tags
-from goods.goods.serializers import (AdDetailSerializer, AdListSerializerCut,
-                                     TagDetailSerializer)
+from goods.models import Ad, Tags
+from goods.serializers import (
+    AdDetailSerializer,
+    AdListSerializerCut,
+    TagDetailSerializer,
+)
+
+import httpx
+import json
 
 
 # creating a new ad (POST)
@@ -39,7 +46,10 @@ class AdEntireLook(APIView):
     def get_object(self, pk):
         try:
             ad_current = Ad.objects.get(pk=pk)
+            model_dict = model_to_dict(ad_current)
             ad_current.views = F("views") + 1
+            if model_dict["views"] % 10 == 0:
+                send_msg(model_dict["views"])
             ad_current.save()
             return Ad.objects.get(pk=pk)
         except Ad.DoesNotExist:
@@ -77,3 +87,15 @@ class FindByFilter(generics.ListAPIView):
     serializer_class = AdDetailSerializer
     filter_backends = (filters.DjangoFilterBackend,)
     filter_class = AdFilter
+
+
+# TO REMAKE !!!
+def send_msg(views):
+    text_msg = json.dumps(
+        {
+            "msg_to": "endlessmeal@le-memese.com",
+            "msg_text": f"Your ad just reached {views} views!",
+            "msg_subject": "Notification",
+        }
+    )
+    resp = httpx.post(f"http://messages:8008/api/v1/send", data=text_msg)
